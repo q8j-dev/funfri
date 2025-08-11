@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>/ FunFri \</title>
+    <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet" />
+    <meta property="og:title" content="FunFri" />
+    <meta property="og:description" content="The go to site for games online!" />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="FunFri" />
+    <meta name="twitter:description" content="The go to site for games online!" />
+    <style>
+        :root {
+            --dark-color: rgb(2, 4, 8);
+            --purple-wave: #8e44ad;
+            --purple-wave-rgb: 142, 68, 173;
+        }
+        html {
+            scroll-behavior: smooth;
+        }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            cursor: none !important;
+        }
+        body {
+            font-family: 'Unbounded', sans-serif;
+            background-color: var(--dark-color);
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+            color: #ffffff;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+        }
+        
+        /* --- BACKGROUND & OVERLAYS --- */
+        #webgl-canvas, #stars-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: block;
+            z-index: -1;
+        }
+        #stars-container {
+            z-index: 1;
+            pointer-events: none;
+        }
+        #loading-overlay, #entry-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(2, 4, 8, 0.7);
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.8s ease-out;
+            z-index: 9999;
+        }
+        #loading-overlay { z-index: 10000; }
+        #loading-overlay.fade-out, #entry-overlay.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+        .loader {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top: 4px solid #ffffff;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin-bottom: 15px;
+        }
+        .loading-text {
+            color: #ffffff;
+            font-size: 1.2rem;
+            font-weight: 500;
+        }
+
+        /* --- CURSOR --- */
+        #custom-cursor {
+            position: fixed;
+            width: 12px;
+            height: 12px;
+            background-color: white;
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 20002;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 0 8px 4px rgba(255, 255, 255, 0.4);
+            transition: transform 0.1s ease-out, width 0.2s ease, height 0.2s ease, background-color 0.2s ease, border-radius 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+        }
+        #custom-cursor.cursor-glow-effect {
+            width: 35px !important;
+            height: 35px !important;
+            background-color: rgba(255, 255, 255, 0.7) !important;
+            border-radius: 50% !important;
+            box-shadow: 0 0 12px 4px var(--purple-wave) !important;
+        }
+
+        /* --- LAYOUT & MAIN CONTENT --- */
+        .container {
+            position: relative;
+            z-index: 10;
+            min-height: 100vh;
+            width: 100%;
+            padding: 2rem 4rem 7rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            visibility: hidden;
+            opacity: 0;
+            transition: opacity 0.8s ease-out 0.2s;
+        }
+        body.intro-complete .container,
+        body.intro-complete .footer {
+            visibility: visible;
+            opacity: 1;
+        }
+        .hero-section {
+            text-align: center;
+            max-width: 800px;
+            margin-bottom: 4rem;
+            perspective: 1000px;
+            animation: float 6s ease-in-out infinite;
+        }
+
+        /* --- TYPOGRAPHY & TITLES --- */
+        .entry-title {
+            font-size: clamp(4rem, 15vw, 8rem);
+            font-weight: 700;
+            color: #ffffff;
+            margin-bottom: 2rem;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5), 0 4px 8px rgba(0, 0, 0, 0.3), 5px 5px 0px rgba(255, 255, 255, 0.12);
+            animation: float 6s ease-in-out infinite;
+        }
+        .logo {
+            font-size: clamp(2.75rem, 7.5vw, 6rem);
+            font-weight: 700;
+            color: #ffffff;
+            margin-bottom: 1rem;
+            position: relative;
+            display: inline-block;
+            transition: all 0.3s ease;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5), 0 4px 8px rgba(0, 0, 0, 0.3), 5px 5px 0px rgba(255, 255, 255, 0.15), 10px 10px 0px rgba(255, 255, 255, 0.1), 15px 15px 0px rgba(255, 255, 255, 0.05);
+            opacity: 0;
+            animation: logoSlideIn 1.2s cubic-bezier(0.175, 0.885, 0.32, 1.275) 0.3s forwards;
+        }
+        .logo:hover {
+            transform: translateY(-5px) scale(1.05);
+            text-shadow: 0 4px 8px rgba(0, 0, 0, 0.6), 0 8px 16px rgba(0, 0, 0, 0.4), 0 0 20px rgba(255, 255, 255, 0.2), 5px 5px 0px rgba(255, 255, 255, 0.18), 10px 10px 0px rgba(255, 255, 255, 0.12), 15px 15px 0px rgba(255, 255, 255, 0.06);
+        }
+        .tagline {
+            font-size: clamp(0.5rem, 2.25vw, 1.75rem);
+            color: rgba(255, 255, 255, 0.85);
+            font-weight: 450;
+            margin-bottom: 3rem;
+            letter-spacing: 0.8px;
+            text-shadow: 0 2px 8px rgba(0, 0, 0, 0.75);
+            opacity: 0;
+        }
+        
+        /* --- BUTTONS --- */
+        .nav-buttons {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 2rem;
+            max-width: 1000px;
+            width: 100%;
+            justify-content: center;
+        }
+        #enter-btn {
+            font-family: 'Unbounded', sans-serif;
+            font-size: 1.5rem;
+            font-weight: 500;
+            color: white;
+            background: transparent;
+            border: 1px solid var(--purple-wave);
+            backdrop-filter: blur(30px);
+            -webkit-backdrop-filter: blur(30px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2), 0 0 20px var(--purple-wave), inset 0 -2px 0 rgba(0, 0, 0, 0.1);
+            border-radius: 50px;
+            padding: 1rem 3rem;
+            transition: transform 0.4s cubic-bezier(0.23, 1, 0.32, 1), background-color 0.3s ease, box-shadow 0.3s ease;
+        }
+        .nav-btn {
+            position: relative;
+            padding: 1.5rem 1.8rem;
+            background-color: transparent;
+            border: 1px solid var(--purple-wave);
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+            box-shadow: 0 15px 50px rgba(0, 0, 0, 0.25), 0 0 25px rgba(var(--purple-wave-rgb), 0.7), inset 0 -2px 0 rgba(0, 0, 0, 0.1);
+            border-radius: 47.5px;
+            color: white;
+            font-size: 1rem;
+            font-weight: 500;
+            text-decoration: none;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            opacity: 0; /* Start invisible for animation */
+            transform: translateY(20px); /* Start position for animation */
+            transition: transform 0.4s cubic-bezier(0.23, 1, 0.32, 1), background-color 0.3s ease, box-shadow 0.3s ease, opacity 1s ease-out;
+        }
+        .btn-icon {
+            margin-bottom: 0.8rem;
+            filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.5));
+            transform: translateY(-2px) scale(1.20);
+            transition: all 0.3s ease;
+        }
+        .nav-btn div {
+            text-shadow: 0 2px 8px rgba(0,0,0,0.75);
+        }
+
+        /* Button Hover & Active States */
+        #enter-btn:hover, .nav-btn:hover {
+            background-color: transparent;
+            box-shadow: 0 15px 50px rgba(0, 0, 0, 0.3), 0 0 35px rgba(var(--purple-wave-rgb), 0.8), inset 0 -2px 0 rgba(0, 0, 0, 0.1);
+        }
+        #enter-btn:active, .nav-btn:active {
+            transform: scale(0.98);
+        }
+
+        /* Button Effects */
+        .nav-btn::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.5), transparent);
+            transition: left 0.6s ease;
+        }
+        .nav-btn:hover::after {
+            left: 100%;
+        }
+        .ripple {
+            position: absolute;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.3);
+            animation: ripple-effect 0.6s linear;
+            transform: scale(0);
+            pointer-events: none;
+        }
+
+        /* --- FOOTER --- */
+        .footer {
+            position: absolute;
+            bottom: 1rem;
+            left: 50%;
+            transform: translateX(-50%);
+            text-align: center;
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 0.8rem;
+            background: transparent;
+            padding: 0.8rem 1.5rem;
+            border-radius: 20px;
+            border: 1px solid var(--purple-wave);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2), 0 0 20px rgba(var(--purple-wave-rgb), 0.6), inset 0 -1px 0 rgba(0, 0, 0, 0.1);
+            width: auto;
+            white-space: nowrap;
+            visibility: hidden;
+            opacity: 0;
+            transition: opacity 0.8s ease-out 0.2s, background-color 0.3s ease, box-shadow 0.3s ease;
+        }
+        .footer:hover {
+            background: transparent;
+            box-shadow: 0 12px 35px rgba(0, 0, 0, 0.25), 0 0 25px rgba(var(--purple-wave-rgb), 0.7), inset 0 -1px 0 rgba(0, 0, 0, 0.1);
+        }
+
+        /* --- KEYFRAME ANIMATIONS --- */
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        @keyframes logoSlideIn {
+            from { opacity: 0; transform: translateY(60px) rotateX(-20deg) scale(0.8); filter: blur(8px); }
+            to { opacity: 1; transform: translateY(0px) rotateX(0deg) scale(1); filter: blur(0px); }
+        }
+        @keyframes ripple-effect { to { transform: scale(1.8); opacity: 0; } }
+        @keyframes float { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-10px); } }
+        
+        /* --- RESPONSIVE DESIGN --- */
+        @media (max-width: 991.98px) {
+            .container { padding: 2rem 3rem 7rem; }
+            .nav-buttons { gap: 2rem; }
+        }
+        @media (max-width: 767.98px) {
+            .container { padding: 1.5rem 2rem 6rem; }
+            .hero-section { margin-bottom: 2.5rem; padding: 1rem 0.5rem; }
+            .logo { font-size: clamp(3rem, 10vw, 6rem); }
+            .tagline { font-size: clamp(1.1rem, 4vw, 2rem); margin-bottom: 2.5rem; }
+            .nav-buttons { grid-template-columns: 1fr; gap: 1.5rem; max-width: 350px; width: 100%; margin: 0 auto; }
+            .nav-btn { padding: 1.2rem 1rem; font-size: 0.95rem; border-radius: 30px; }
+            .btn-icon { width: 32px; height: 32px; margin-bottom: 0.7rem; }
+            .footer { padding: 0.8rem 1.2rem; font-size: 0.75rem; bottom: 1rem; width: calc(100% - 3rem); max-width: 90%; border-radius: 20px; white-space: normal; }
+        }
+        @media (max-width: 575.98px) {
+            .container { padding: 1rem 1.5rem 5.5rem; }
+            .hero-section { margin-bottom: 2rem; padding: 0.5rem; }
+            .logo { font-size: clamp(2.2rem, 12vw, 5rem); }
+            .tagline { font-size: clamp(0.9rem, 5vw, 1.5rem); margin-bottom: 1.5rem; }
+            .nav-buttons { gap: 1rem; max-width: 300px; }
+            .nav-btn { padding: 1rem 0.8rem; font-size: 0.85rem; border-radius: 25px; }
+            .btn-icon { width: 28px; height: 28px; margin-bottom: 0.5rem; }
+            .footer { padding: 0.6rem 1rem; font-size: 0.7rem; bottom: 0.8rem; width: calc(100% - 2rem); max-width: 95%; border-radius: 18px; }
+        }
+    </style>
+</head>
+<body>
+    <canvas id="webgl-canvas"></canvas>
+    <canvas id="stars-container"></canvas>
+    <div id="loading-overlay">
+        <div class="loader"></div>
+        <div class="loading-text">Loading FunFri...</div>
+    </div>
+    <div id="entry-overlay">
+        <h1 class="entry-title">FunFri</h1>
+        <button id="enter-btn">Enter</button>
+    </div>
+    <div id="custom-cursor"></div>
+    <div class="container">
+        <div class="hero-section">
+            <h1 class="logo">FunFri</h1>
+            <p class="tagline">August 17th</p>
+        </div>
+        <div class="nav-buttons">
+            <a href="games" class="nav-btn">
+                <img class="btn-icon" src="games.png" alt="Games Icon" width="44" height="44" />
+                <div>Games</div>
+            </a>
+            <a href="apps" class="nav-btn">
+                <img class="btn-icon" src="apps.png" alt="Apps Icon" width="44" height="44" />
+                <div>Apps</div>
+            </a>
+            <a href="tools" class="nav-btn">
+                <img class="btn-icon" src="tools.png" alt="Tools Icon" width="44" height="44" />
+                <div>Tools</div>
+            </a>
+            <a href="creds" class="nav-btn">
+                <img class="btn-icon" src="credits.png" alt="Credits Icon" width="44" height="44" />
+                <div>Credits</div>
+            </a>
+        </div>
+        <div class="ad-container">
+        </div>
+    </div>
+    <div class="footer">
+        <p>© 2025 FunFri. All rights reserved.</p>
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- BACKGROUND & PARTICLE EFFECTS ---
+            const particleCanvas = document.getElementById('stars-container');
+            const particleCtx = particleCanvas.getContext('2d');
+            let floatingParticles = [];
+            const numParticles = 70;
+            const purpleBase = [142, 68, 173];
+            const purpleLight = [180, 100, 200];
+            
+            function resizeParticleCanvas() {
+                particleCanvas.width = window.innerWidth;
+                particleCanvas.height = window.innerHeight;
+            }
+
+            class FloatingParticle {
+                constructor() { this.reset(); }
+                reset() {
+                    this.x = Math.random() * particleCanvas.width;
+                    this.y = Math.random() * particleCanvas.height;
+                    this.vx = (Math.random() - 0.5) * 0.4;
+                    this.vy = (Math.random() - 0.5) * 0.4;
+                    this.life = Math.random() * 200 + 150;
+                    this.initialLife = this.life;
+                    this.size = Math.random() * 1.5 + 0.8;
+                    this.color = Math.random() > 0.5 ? purpleBase : purpleLight;
+                }
+                update() {
+                    this.life--;
+                    this.x += this.vx;
+                    this.y += this.vy;
+                    if (this.life <= 0 || this.x < 0 || this.x > particleCanvas.width || this.y < 0 || this.y > particleCanvas.height) {
+                        this.reset();
+                    }
+                }
+                draw() {
+                    const lifeRatio = this.life / this.initialLife;
+                    let opacity = (lifeRatio > 0.8) ? (1 - lifeRatio) * 5 : lifeRatio / 0.8;
+                    opacity = Math.min(Math.max(opacity, 0), 1) * 0.3;
+                    particleCtx.beginPath();
+                    particleCtx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                    particleCtx.fillStyle = `rgba(${this.color[0]}, ${this.color[1]}, ${this.color[2]}, ${opacity})`;
+                    particleCtx.shadowColor = `rgba(${this.color[0]}, ${this.color[1]}, ${this.color[2]}, ${opacity * 0.5})`;
+                    particleCtx.shadowBlur = 6;
+                    particleCtx.fill();
+                }
+            }
+
+            function initParticles() {
+                for (let i = 0; i < numParticles; i++) { floatingParticles.push(new FloatingParticle()); }
+            }
+
+            function animateParticles() {
+                particleCtx.clearRect(0, 0, particleCanvas.width, particleCanvas.height);
+                floatingParticles.forEach(p => { p.update(); p.draw(); });
+                requestAnimationFrame(animateParticles);
+            }
+
+            resizeParticleCanvas();
+            initParticles();
+            animateParticles();
+            window.addEventListener('resize', resizeParticleCanvas);
+
+            // --- CORRECTED WEBGL BACKGROUND LOGIC ---
+            const webglCanvas = document.getElementById("webgl-canvas");
+            const webglContext = webglCanvas.getContext("webgl");
+            if (!webglContext) {
+                console.error("WebGL not supported, wave background will not display.");
+            } else {
+                let shaderProgram;
+                let timeUniformLocation;
+                let resolutionUniformLocation;
+
+                function resizeWebGLCanvas() {
+                    webglCanvas.width = window.innerWidth;
+                    webglCanvas.height = window.innerHeight;
+                    webglContext.viewport(0, 0, webglCanvas.width, webglCanvas.height);
+                }
+
+                const vertexShaderSource = `
+                    attribute vec2 aVertexPosition;
+                    void main() {
+                      gl_Position = vec4(aVertexPosition, 0.0, 1.0);
+                    }
+                `;
+                const fragmentShaderSource = `
+                    precision highp float;
+                    uniform float uTime;
+                    uniform vec2 uResolution;
+                    const float waveWidthFactor = 1.5;
+                    const vec3 colorA = vec3(0.8, 0.2, 0.8);
+                    const vec3 colorB = vec3(0.56, 0.27, 0.98);
+
+                    vec3 calcSine(
+                      vec2 uv, float speed, float frequency, float amplitude, float phaseShift,
+                      float verticalOffset, vec3 baseColor, float lineWidth, float sharpness, bool invertFalloff
+                    ) {
+                      float angle = uTime * speed * frequency * -1.0 + (phaseShift + uv.x) * 2.0;
+                      float waveY = sin(angle) * amplitude + verticalOffset;
+                      float deltaY = waveY - uv.y;
+                      float distanceVal = distance(waveY, uv.y);
+                      if (invertFalloff) {
+                        if (deltaY > 0.0) { distanceVal = distanceVal * 4.0; }
+                      } else {
+                        if (deltaY < 0.0) { distanceVal = distanceVal * 4.0; }
+                      }
+                      float smoothVal = smoothstep(lineWidth * waveWidthFactor, 0.0, distanceVal);
+                      float scaleVal = pow(smoothVal, sharpness);
+                      return min(baseColor * scaleVal, baseColor);
+                    }
+
+                    void main() {
+                      vec2 uv = gl_FragCoord.xy / uResolution;
+                      vec3 gradientColor = mix(colorA, colorB, uv.y * 1.2 + sin(uTime * 0.3) * 0.1);
+                      vec3 accumulatedColor = vec3(0.0);
+                      accumulatedColor += calcSine(uv, 0.8, 0.20, 0.2, 0.0, 0.5, gradientColor, 0.1, 15.0, false);
+                      accumulatedColor += calcSine(uv, 1.6, 0.40, 0.15, 0.0, 0.5, gradientColor, 0.1, 17.0, false);
+                      accumulatedColor += calcSine(uv, 1.2, 0.60, 0.15, 0.0, 0.5, gradientColor, 0.05, 23.0, false);
+                      accumulatedColor += calcSine(uv, 0.4, 0.26, 0.07, 0.0, 0.3, gradientColor, 0.1, 17.0, true);
+                      accumulatedColor += calcSine(uv, 1.2, 0.36, 0.07, 0.0, 0.3, gradientColor, 0.1, 17.0, true);
+                      accumulatedColor += calcSine(uv, 2.0, 0.46, 0.07, 0.0, 0.3, gradientColor, 0.05, 23.0, true);
+                      accumulatedColor += calcSine(uv, 0.8, 0.58, 0.05, 0.0, 0.3, gradientColor, 0.2, 15.0, true);
+                      gl_FragColor = vec4(accumulatedColor, 1.0);
+                    }
+                `;
+                function compileShader(source, type) {
+                    const shader = webglContext.createShader(type);
+                    webglContext.shaderSource(shader, source);
+                    webglContext.compileShader(shader);
+                    if (!webglContext.getShaderParameter(shader, webglContext.COMPILE_STATUS)) {
+                        console.error("Shader error:", webglContext.getShaderInfoLog(shader));
+                        return null;
+                    }
+                    return shader;
+                }
+                function initializeWebGL() {
+                    const vs = compileShader(vertexShaderSource, webglContext.VERTEX_SHADER);
+                    const fs = compileShader(fragmentShaderSource, webglContext.FRAGMENT_SHADER);
+                    if (!vs || !fs) return;
+
+                    shaderProgram = webglContext.createProgram();
+                    webglContext.attachShader(shaderProgram, vs);
+                    webglContext.attachShader(shaderProgram, fs);
+                    webglContext.linkProgram(shaderProgram);
+                    if (!webglContext.getProgramParameter(shaderProgram, webglContext.LINK_STATUS)) {
+                        console.error("Link error:", webglContext.getProgramInfoLog(shaderProgram));
+                        return;
+                    }
+                    webglContext.useProgram(shaderProgram);
+                    const posLoc = webglContext.getAttribLocation(shaderProgram, "aVertexPosition");
+                    timeUniformLocation = webglContext.getUniformLocation(shaderProgram, "uTime");
+                    resolutionUniformLocation = webglContext.getUniformLocation(shaderProgram, "uResolution");
+                    const buffer = webglContext.createBuffer();
+                    webglContext.bindBuffer(webglContext.ARRAY_BUFFER, buffer);
+                    webglContext.bufferData(webglContext.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), webglContext.STATIC_DRAW);
+                    webglContext.enableVertexAttribArray(posLoc);
+                    webglContext.vertexAttribPointer(posLoc, 2, webglContext.FLOAT, false, 0, 0);
+                    
+                    resizeWebGLCanvas(); 
+                    window.addEventListener("resize", resizeWebGLCanvas);
+
+                    requestAnimationFrame(renderWebGLFrame);
+                }
+                function renderWebGLFrame(timeMs) {
+                    if (!shaderProgram) return;
+                    webglContext.uniform1f(timeUniformLocation, timeMs * 0.001);
+                    webglContext.uniform2f(resolutionUniformLocation, webglCanvas.width, webglCanvas.height);
+                    webglContext.drawArrays(webglContext.TRIANGLE_STRIP, 0, 4);
+                    requestAnimationFrame(renderWebGLFrame);
+                }
+                initializeWebGL();
+            }
+
+            // --- INTRO & LOADING LOGIC ---
+            const loadingOverlay = document.getElementById('loading-overlay');
+            const entryOverlay = document.getElementById('entry-overlay');
+            const enterBtn = document.getElementById('enter-btn');
+            const tagline = document.querySelector('.tagline');
+            
+            const showMainMenu = () => {
+                document.body.classList.add('intro-complete');
+                tagline.style.opacity = '1';
+                const navButtons = document.querySelectorAll('.nav-btn');
+                navButtons.forEach((btn, index) => {
+                    setTimeout(() => {
+                        btn.style.opacity = '1';
+                        btn.style.transform = 'translateY(0)';
+                    }, (index + 1) * 150);
+                });
+            };
+
+            if (localStorage.getItem('funfri_entered') === 'true') {
+                if (entryOverlay) entryOverlay.remove();
+                if (loadingOverlay) loadingOverlay.remove();
+                showMainMenu();
+            } else {
+                setTimeout(() => {
+                    if(loadingOverlay) {
+                        loadingOverlay.classList.add('fade-out');
+                        loadingOverlay.addEventListener('transitionend', () => loadingOverlay.remove(), { once: true });
+                    }
+                }, 500);
+                if (enterBtn && entryOverlay) {
+                    enterBtn.addEventListener('click', () => {
+                        entryOverlay.classList.add('hidden');
+                        localStorage.setItem('funfri_entered', 'true');
+                        showMainMenu();
+                        entryOverlay.addEventListener('transitionend', () => entryOverlay.remove(), { once: true });
+                    });
+                }
+            }
+
+            // --- ROBUST BUTTON INTERACTION LOGIC ---
+            const customCursor = document.getElementById('custom-cursor');
+            document.addEventListener('mousemove', (e) => {
+                customCursor.style.left = `${e.clientX}px`;
+                customCursor.style.top = `${e.clientY}px`;
+            });
+
+            const STICKY_STRENGTH = 0.25; // Reduced strength
+            const allStickyButtons = document.querySelectorAll('.nav-btn, #enter-btn');
+
+            allStickyButtons.forEach(button => {
+                button.addEventListener('mouseenter', () => {
+                    customCursor.classList.add('cursor-glow-effect');
+                    // Reset any other active button
+                    allStickyButtons.forEach(otherBtn => {
+                        if (otherBtn !== button && otherBtn.style.transform !== '' && otherBtn.style.transform !== 'translate(0px, 0px)') {
+                           otherBtn.style.transition = 'transform 0.4s cubic-bezier(0.23, 1, 0.32, 1)';
+                           otherBtn.style.transform = 'translate(0px, 0px)';
+                        }
+                    });
+                    button.style.transition = 'transform 0.1s linear';
+                });
+
+                button.addEventListener('mousemove', (e) => {
+                    const rect = button.getBoundingClientRect();
+                    const x = e.clientX - rect.left - rect.width / 2;
+                    const y = e.clientY - rect.top - rect.height / 2;
+                    button.style.transform = `translate(${x * STICKY_STRENGTH}px, ${y * STICKY_STRENGTH}px)`;
+                });
+
+                button.addEventListener('mouseleave', () => {
+                    customCursor.classList.remove('cursor-glow-effect');
+                    button.style.transition = 'transform 0.4s cubic-bezier(0.23, 1, 0.32, 1)';
+                    button.style.transform = 'translate(0px, 0px)';
+                });
+
+                button.addEventListener('click', function(event) {
+                    const ripple = document.createElement('span');
+                    const rect = this.getBoundingClientRect();
+                    const size = Math.max(rect.width, rect.height);
+                    const x = event.clientX - rect.left - (size / 2);
+                    const y = event.clientY - rect.top - (size / 2);
+                    ripple.style.width = ripple.style.height = `${size}px`;
+                    ripple.style.left = `${x}px`;
+                    ripple.style.top = `${y}px`;
+                    ripple.classList.add('ripple');
+                    this.appendChild(ripple);
+                    ripple.addEventListener('animationend', () => ripple.remove(), { once: true });
+                });
+            });
+        });
+    </script>
+</body>
+</html>

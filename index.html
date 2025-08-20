@@ -3,101 +3,47 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>High-Speed Page</title>
-    <!-- Use Tailwind CSS for a modern, responsive design -->
+    <title>Hello Tab Opener</title>
+    <!-- Use Tailwind CSS for a clean, modern look -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* Use Inter font for a clean, modern look */
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
+        /* Use Inter font for a professional feel */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap');
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #f3f4f6;
         }
     </style>
 </head>
-<body class="bg-gray-100 flex items-center justify-center min-h-screen p-4">
-
-    <!-- Main content container -->
-    <div id="content-container" class="bg-white p-8 sm:p-12 rounded-2xl shadow-xl border border-gray-200 w-full max-w-2xl text-center">
-        <!--
-            This is the main display area for the text.
-            Its content will be updated every millisecond by the JavaScript.
-        -->
-        <div id="working-text" class="text-4xl sm:text-6xl font-extrabold text-indigo-600 transition-all duration-100 ease-in-out">
-            working??
-        </div>
-        
-        <!--
-            A simple link to demonstrate that redirects are blocked.
-            The `event.preventDefault()` in the script will stop this from navigating.
-        -->
-        <a href="https://www.google.com" target="_blank" class="mt-8 inline-block text-center text-blue-500 hover:text-blue-700 underline transition-colors duration-200">
-            Click here (Redirects are blocked)
-        </a>
-
-        <!-- Message box for a non-intrusive way to show messages instead of alert() -->
-        <div id="message-box" class="fixed bottom-4 right-4 bg-gray-800 text-white p-4 rounded-lg shadow-lg opacity-0 transition-opacity duration-300 pointer-events-none">
-            Redirects are blocked.
-        </div>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen">
+    <!-- Main page content -->
+    <div class="bg-white p-8 rounded-2xl shadow-xl max-w-sm text-center">
+        <h1 class="text-3xl font-bold mb-4 text-gray-800">New Tab Opened!</h1>
+        <p class="text-gray-600">
+            A new tab should have opened with the word "hello!". If you didn't see it,
+            please check your browser's pop-up settings.
+        </p>
     </div>
 
     <script>
-        // Get references to the HTML elements
-        const workingTextEl = document.getElementById('working-text');
-        const messageBoxEl = document.getElementById('message-box');
+        // The script runs as soon as the page is loaded.
+        document.addEventListener('DOMContentLoaded', () => {
+            // Use a try-catch block for basic error handling in case of pop-up blockers.
+            try {
+                // Open a new tab and write content to it.
+                // The 'about:blank' URL ensures a completely blank document.
+                const newTab = window.open('about:blank', '_blank');
 
-        // This function displays a temporary message in the message box.
-        function showMessage(message) {
-            messageBoxEl.textContent = message;
-            messageBoxEl.style.opacity = '1';
-            messageBoxEl.style.pointerEvents = 'auto';
-
-            // Hide the message after 2 seconds
-            setTimeout(() => {
-                messageBoxEl.style.opacity = '0';
-                messageBoxEl.style.pointerEvents = 'none';
-            }, 2000);
-        }
-
-        // ---------------------------------------------------------------------
-        // Part 1: High-speed content "refresh" for a duration of 10 seconds.
-        // We use `setInterval` to run a function at a very high frequency.
-        // It's not a real page refresh, but a DOM update to simulate it.
-        // We'll update a number inside the text to show change.
-        // ---------------------------------------------------------------------
-        
-        let counter = 0;
-        // Store the interval ID so we can stop it later
-        const intervalId = setInterval(() => {
-            // Update the text content. We add the counter to make the change visible.
-            workingTextEl.textContent = `working?? (${counter++})`;
-        }, 1); // This sets the interval to 1 millisecond.
-
-        // Use setTimeout to stop the interval after 10 seconds (10000 milliseconds)
-        setTimeout(() => {
-            clearInterval(intervalId); // This stops the interval
-            workingTextEl.textContent = `Refresh stopped after 10 seconds.`;
-            console.log("Interval cleared after 10 seconds.");
-        }, 10000);
-
-        // ---------------------------------------------------------------------
-        // Part 2: Block all redirects or opening in a new tab.
-        // We listen for any clicks on the entire document.
-        // ---------------------------------------------------------------------
-        document.addEventListener('click', (event) => {
-            // Find the closest parent `<a>` tag of the clicked element.
-            const link = event.target.closest('a');
-
-            // If a link was clicked...
-            if (link) {
-                // Prevent the default behavior of the link (navigation).
-                event.preventDefault();
-
-                // Show a message to the user that the redirect was blocked.
-                showMessage("Redirects are blocked as requested.");
-
-                // To further demonstrate, you could log to the console
-                console.log(`Blocked redirect to: ${link.href}`);
+                if (newTab) {
+                    // Check if the tab was successfully opened (not blocked by a pop-up blocker).
+                    newTab.document.write('<p style="font-size: 4rem; text-align: center; font-family: sans-serif;">hello!</p>');
+                    newTab.document.title = 'Hello!';
+                    newTab.focus();
+                } else {
+                    // This block will execute if the browser's pop-up blocker prevents the new tab from opening.
+                    console.error('The new tab was blocked by a pop-up blocker.');
+                }
+            } catch (error) {
+                console.error('An error occurred while trying to open the new tab:', error);
             }
         });
     </script>
